@@ -1,0 +1,22 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const express_2 = __importDefault(require("express"));
+const authorization_1 = require("../middlewares/authorization");
+const auth_1 = require("../middlewares/auth");
+const menuController_1 = require("../controllers/menuController");
+const verifyMenu_1 = require("../middlewares/verifyMenu");
+const uploadImage_1 = __importDefault(require("../middlewares/uploadImage"));
+const client_1 = require("@prisma/client");
+const router = (0, express_1.Router)();
+const prisma = new client_1.PrismaClient();
+const app = (0, express_2.default)();
+app.use(express_2.default.json());
+app.get(`/`, [authorization_1.verifyToken], menuController_1.getAllMenu);
+app.post(`/`, [auth_1.authenticate, (0, auth_1.authorize)("admin_stan"), uploadImage_1.default.single("foto"), verifyMenu_1.verifyAddMenu], menuController_1.createMenu);
+app.put(`/:id`, [authorization_1.verifyToken, uploadImage_1.default.single("foto"), verifyMenu_1.verifyEditMenu], menuController_1.updateMenu);
+app.delete(`/:id`, [authorization_1.verifyToken,], menuController_1.dropMenu);
+exports.default = app;
