@@ -44,7 +44,8 @@ export const getAllMenu = async (request: Request, response: Response) => {
               jenis: menu.jenis,
               foto: menu.foto,
               deskripsi: menu.deskripsi,
-              id_stan: menu.id_stan
+              id_stan: menu.id_stan,
+              
             };
           });
       
@@ -60,11 +61,9 @@ export const getAllMenu = async (request: Request, response: Response) => {
       }
     }
 
-    export const createMenu = async (request: AuthRequest, response: Response) => {
+    export const createMenu = async (request: Request, response: Response) => {
         try {
-          const { nama_makanan, harga, jenis, deskripsi } = request.body;
-          const id_stan = request.user?.id_stan;
-          if (!id_stan) return response.status(401).json({ message: "Unauthorized" });
+          const { nama_makanan, harga, jenis, deskripsi, id_stan } = request.body;
       
           let filename = "";
           if (request.file) filename = request.file.filename;
@@ -76,7 +75,7 @@ export const getAllMenu = async (request: Request, response: Response) => {
               jenis,
               foto: filename,
               deskripsi,
-              id_stan,
+              id_stan: Number(id_stan),
             },
             include: { stan_detail: true },
           });
@@ -95,17 +94,14 @@ export const getAllMenu = async (request: Request, response: Response) => {
       };
       
 
-      export const updateMenu = async (request: AuthRequest, response: Response) => {
+      export const updateMenu = async (request: Request, response: Response) => {
         try {
           const { id } = request.params;
           const { nama_makanan, harga, jenis, deskripsi } = request.body;
-          const id_stan = request.user?.id_stan;
-          if (!id_stan) return response.status(401).json({ message: "Unauthorized" });
       
           const findMenu = await prisma.menu.findFirst({
             where: {
               id: Number(id),
-              id_stan,
             },
           });
       
@@ -150,16 +146,14 @@ export const getAllMenu = async (request: Request, response: Response) => {
       };
       
 
-      export const dropMenu = async (request: AuthRequest, response: Response) => {
+      export const dropMenu = async (request: Request, response: Response) => {
         try {
           const { id } = request.params;
-          const id_stan = request.user?.id_stan;
-          if (!id_stan) return response.status(401).json({ message: "Unauthorized" });
+          
       
           const findMenu = await prisma.menu.findFirst({
             where: {
               id: Number(id),
-              id_stan,
             },
           });
       

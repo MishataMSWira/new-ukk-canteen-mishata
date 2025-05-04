@@ -12,59 +12,72 @@ interface AuthRequest extends Request {
         username: string;
         role: string;
         id_siswa?: number;
+        id_stan?: number;
     };
   }
 
-export const authenticate = async (request: AuthRequest, response: Response, next: NextFunction) => {
+  export const authenticate = async (
+    request: AuthRequest,
+    response: Response,
+    next: NextFunction
+  ) => {
     const token = request.headers["authorization"]?.split(" ")[1];
-
-  if (!token) {
-    return response.status(401).json({ error: "No token provided" });
-  }
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_TOKEN!);
-
-    console.log("Decoded token:", decoded);
-
-    if (!decoded || typeof decoded === "string" || !decoded.userId) {
-        return response.status(401).json({ message: "Token tidak valid atau userId tidak ada" });
+  
+    if (!token) {
+      return response.status(401).json({ error: "No token provided" });
     }
-
-    // fetch db untuk ambil detail user
-    const user = await prisma.users.findUnique({
-      where: { id: decoded.userId },
-      select: {
-        id: true,
-        username: true,
-        role: true,
-        siswa: {
-          select: {
-            id: true,
+  
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_TOKEN!);
+  
+      console.log("Decoded token:", decoded);
+  
+      if (!decoded || typeof decoded === "string" || !decoded.userId) {
+        return response
+          .status(401)
+          .json({ message: "Token tidak valid atau userId tidak ada" });
+      }
+  
+      // fetch db untuk ambil detail user
+      const user = await prisma.users.findUnique({
+        where: { id: decoded.userId },
+        select: {
+          id: true,
+          username: true,
+          role: true,
+          siswa: {
+            select: {
+              id: true,
+            },
+          },
+          stan: {
+            select: {
+              id: true,
+            },
           },
         },
-      },
-    });
-    
-    if (!user) {
-      return response.status(401).json({ error: "Invalid token" });
+      });
+  
+      if (!user) {
+        return response.status(401).json({ error: "Invalid token" });
+      }
+  
+      request.user = {
+        userId: user.id,
+        username: user.username,
+        role: user.role,
+        id_siswa: user.siswa?.id,
+        id_stan: user.stan?.id, // <-- TAMBAHKAN INI
+      };
+  
+      console.log("[AUTH] User berhasil login:", request.user);
+      next();
+    } catch (error) {
+      console.error(`[AUTHENTICATE] ${error}`);
+      response.status(401).json({ error: "Unauthorized" });
     }
-    
-    request.user = {
-      userId: user.id,
-      username: user.username,
-      role: user.role,
-      id_siswa: user.siswa?.id,  // <-- TAMBAHKAN INI
-    };
-    
-    console.log("[AUTH] User berhasil login:", request.user);
-
-    next();
-  } catch (error) {
-    console.error(`[AUTHENTICATE] ${error}`);
-    response.status(401).json({ error: "Unauthorized" });
-  }
-};
+  };
+  
 
 export const authorize = (allowedRoles: any) => {
     return (request: AuthRequest, response: Response, next: NextFunction) => {

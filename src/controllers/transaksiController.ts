@@ -60,7 +60,7 @@ export const getAllTransaksi = async (request: Request, response: Response) => {
 
 export const getPesananAktifSiswa = async (req: Request, res: Response) => {
   try {
-    const siswaId = (req as any).user?.id_siswa; // didapat dari token auth
+    const siswaId = (req as any).user.id_siswa; // didapat dari token auth
 
     if (!siswaId) {
       return res.status(401).json({ status: false, message: "Unauthorized" });
@@ -72,9 +72,12 @@ export const getPesananAktifSiswa = async (req: Request, res: Response) => {
         status: { not: "sampai" }, // status selain selesai dianggap aktif
       },
       orderBy: {
-        tanggal: "desc",
+        tanggal: "asc",
       },
     });
+
+    console.log("Pesanan ditemukan:", pesananAktif.length);
+
 
     return res.status(200).json({
       status: true,
@@ -287,6 +290,74 @@ export const updateTransaksi = async (request: Request, response: Response) => {
   }
 };
 
+// PUT /transaksi/:id/update-status
+export const updateStatusPesananByStan = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const user = (req as any).user; // ambil data dari token auth
+    if (!user || user.role !== "admin_stan") {
+      return res.status(403).json({ status: false, message: "Access denied" });
+    }
+
+    const transaksi = await prisma.transaksi.findFirst({
+      where: { id: Number(id) },
+      include: {
+        DetailTransaksi: {
+          include: {
+            menu_detail: true
+          }
+        }
+      },
+    });
+    
+    
+    
+    if (!transaksi) {
+      return res.status(404).json({ status: false, message: "Pesanan tidak ditemukan" });
+    }
+    
+    console.log("User Stan ID:", user.id_stan);
+console.log("DetailTransaksi:");
+transaksi.DetailTransaksi.forEach((detail) => {
+  console.log({
+    menuId: detail.menu_detail.id,
+    menuStanId: detail.menu_detail.id_stan,
+  });
+});
+    // pastikan transaksi ini berasal dari stan milik admin tersebut
+    const isFromOwnStan = transaksi.DetailTransaksi.every(
+      (detail) => detail.menu_detail.id_stan === user.id_stan
+    );
+
+    if (!isFromOwnStan) {
+      return res.status(403).json({ status: false, message: "Tidak bisa ubah pesanan dari stan lain" });
+    }
+
+    const updated = await prisma.transaksi.update({
+      where: { id: Number(id) },
+      data: {
+        status,
+      },
+    });
+
+
+
+    return res.status(200).json({
+      status: true,
+      data: updated,
+      message: `Status pesanan berhasil diubah menjadi '${status}'`,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: false,
+      message: `Terjadi kesalahan: ${error}`,
+    });
+  }
+};
+
+
 export const dropTransaksi = async (request: Request, response: Response) => {
   try {
     const { id } = request.params;
@@ -320,17 +391,19 @@ export const dropTransaksi = async (request: Request, response: Response) => {
   }
 };
 
-export const Receipt = async (request: Request, response: Response) => {
+export const Receipt = async (req: Request, res: Response) => {
   try {
-    const { id } = request.params;
+    const { id } = req.params;
 
-    // 🔥 Cek apakah transaksi_id ada dan valid
-    if (!id || isNaN(parseInt(id))) {
-      return response.status(400).json({ error: "Invalid transaksi_id" });
+    // Validasi ID transaksi
+    const transaksiId = Number(id);
+    if (!id || isNaN(transaksiId)) {
+      return res.status(400).json({ status: false, message: "ID transaksi tidak valid" });
     }
 
+    // Ambil detail transaksi
     const transaksi = await prisma.transaksi.findUnique({
-      where: { id: Number(id) },
+      where: { id: transaksiId },
       include: {
         DetailTransaksi: {
           include: {
@@ -343,17 +416,18 @@ export const Receipt = async (request: Request, response: Response) => {
     });
 
     if (!transaksi) {
-      return response.status(404).json({ error: "Transaksi not found" });
+      return res.status(404).json({ status: false, message: "Transaksi tidak ditemukan" });
     }
 
+    // Hitung total dan buat list item
     let totalHarga = 0;
     const items = transaksi.DetailTransaksi.map((detail) => {
-      const subtotal = detail.harga_beli * detail.qty;
+      const subtotal = detail.qty * detail.harga_beli;
       totalHarga += subtotal;
       return {
         nama_menu: detail.menu_detail.nama_makanan,
         qty: detail.qty,
-        hargaSatuan: detail.harga_beli,
+        harga_satuan: detail.harga_beli,
         subtotal,
       };
     });
@@ -361,21 +435,29 @@ export const Receipt = async (request: Request, response: Response) => {
     const nota = {
       transaksi_id: transaksi.id,
       tanggal: transaksi.tanggal,
-      siswa: transaksi.siswa_detail.nama_siswa,
-      stan: transaksi.stan_detail.nama_pemilik,
+      nama_siswa: transaksi.siswa_detail.nama_siswa,
+      nama_stan: transaksi.stan_detail.nama_stan,
+      nama_pemilik: transaksi.stan_detail.nama_pemilik,
       items,
-      totalHarga,
+      total: totalHarga,
       status: transaksi.status,
     };
 
-    return response.status(200).json(nota);
+    return res.status(200).json({
+      status: true,
+      message: "Berhasil mengambil data nota",
+      data: nota,
+    });
+
   } catch (error) {
-    console.error("Error while print recepit:", error);
-    return response
-      .status(500)
-      .json({ error: "There's an error while retrieving your receipt" });
+    console.error("Gagal mengambil nota transaksi:", error);
+    return res.status(500).json({
+      status: false,
+      message: "Terjadi kesalahan saat mengambil nota transaksi",
+    });
   }
 };
+
 
 export const rekapPemasukan = async (request: Request, response: Response) => {
   try {

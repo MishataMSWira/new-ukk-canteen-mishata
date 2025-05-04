@@ -3,6 +3,7 @@ import Joi from 'joi'
 
 /** create schema when add new admin's data, all of fileds have to be required */
 const addDataSchema = Joi.object({
+    id_stan: Joi.number().min(1).required(),
     nama_diskon: Joi.string().required(),
     persentase_diskon: Joi.number().min(0).required(),
     tanggal_awal: Joi.string().required(),
@@ -12,10 +13,12 @@ const addDataSchema = Joi.object({
 
 /** create schema when edit admin's data, all of fileds allow and optional to sent in request */
 const updateDataSchema = Joi.object({
+    id_stan: Joi.number().min(1).optional(),
     nama_diskon: Joi.string().optional(),
     persentase_diskon: Joi.number().min(0).optional(),
     tanggal_awal: Joi.string().optional(),
     tanggal_akhir: Joi.string().optional(),
+    menuIds: Joi.array().min(1).optional()
 })
 
 export const verifyAddDiskon = (request: Request, response: Response, next: NextFunction) => {

@@ -3,6 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import fs from "fs"
 import { BASE_URL } from "../global";
 import { text } from "stream/consumers";
+import bcrypt from "bcrypt"
 
 
 const prisma = new PrismaClient({ errorFormat: "pretty" })
@@ -30,7 +31,7 @@ export const getAllSiswa = async (request: AuthRequest, response: Response) => {
       const siswaList = await prisma.siswa.findMany({
         where: {
           users: {
-            id_stan: userLogin.userId, // pastikan userLogin.userId adalah ID si admin_stan
+            id: userLogin.userId, // pastikan userLogin.userId adalah ID si admin_stan
           },
         },
         skip: (page - 1) * qty,
@@ -40,7 +41,7 @@ export const getAllSiswa = async (request: AuthRequest, response: Response) => {
           users: {
             select: {
               username: true,
-              id_stan: true,
+              id: true,
             },
           },
         },
@@ -64,6 +65,18 @@ export const createSiswa = async (request: Request, response: Response) => {
     try {
         const { username, password, nama_siswa, alamat, telp } = request.body /** get requested data (data has been sent from request) */
         
+        // Cek apakah username sudah digunakan
+            const existingUser = await prisma.users.findUnique({
+              where: { username },
+            });
+        
+            if (existingUser) {
+              return response.status(400).json({ error: "Username sudah digunakan" });
+            }
+        
+            // Hash password
+            const hashedPassword = await bcrypt.hash(password, 10);
+
         let filename = ""
         if (request.file) filename = request.file.filename
         
@@ -71,7 +84,7 @@ export const createSiswa = async (request: Request, response: Response) => {
     const newUser = await prisma.users.create({
         data: {
           username,
-          password,
+          password: hashedPassword,
           role: "siswa", // pastikan ini sesuai enum ROLE di schema kamu
         },
       });
@@ -115,7 +128,7 @@ export const updateSiswa = async (request: AuthRequest, response: Response) => {
         where: {
           id: Number(id),
           users: {
-            id_stan: userLogin?.userId,
+            id: userLogin?.userId,
           },
         },
         include: { users: true },
@@ -165,7 +178,7 @@ export const updateSiswa = async (request: AuthRequest, response: Response) => {
         where: {
           id: Number(id),
           users: {
-            id_stan: userLogin?.userId,
+            id: userLogin?.userId,
           },
         },
         include: { users: true },

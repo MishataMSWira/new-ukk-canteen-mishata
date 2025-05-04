@@ -121,7 +121,7 @@ export const updateStanByVerifikasi = async (req: Request, res: Response) => {
     }
 
    // 2. Pastikan user memiliki relasi ke stan
-if (!user.id_stan) {
+if (!user.id) {
   return res.status(400).json({
     status: false,
     message: "User tidak memiliki data stan untuk diperbarui.",
@@ -131,7 +131,7 @@ if (!user.id_stan) {
 // 3. Update data Stan
 const updatedStan = await prisma.stan.update({
   where: {
-    id: user.id_stan, // pasti number sekarang
+    id: user.id, // pasti number sekarang
   },
   data: {
     nama_stan,

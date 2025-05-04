@@ -1,19 +1,19 @@
 Siswa: 
 1. Siswa dapat register user sebagai pelanggan ✅
 2. Siswa dapat dapat login ke halaman pemesanan. ✅
-3. Siswa dapat melihat menu makanan dan minuman 
-4. Siswa dapat memesan makanan dan minuman dengan diskon sesuai momen tertentu 
+3. Siswa dapat melihat menu makanan dan minuman ✅
+4. Siswa dapat memesan makanan dan minuman dengan diskon sesuai momen tertentu ✅
 5. Siswa dapat melihat status pesanan makanannya ✅
 6. Siswa dapat melihat histori transaksi berdasarkan bulan ✅ 
 7. Siswa dapat mencetak bukti/nota pemesanan ✅
-Admin Stan : 
 
+Admin Stan : 
 1. Calon pemilik Stan dapat register untuk mendaftar stannya dan sebagai admin stan ✅ 
 2. Admin stan dapat login ke halaman pengelolaan stan ✅
 3. Admin stan dapat update data profil stan ✅
 4. Admin stan dapat CRUD data pelanggan ✅
 5. Admin stan dapat CRUD data makanan dan minuman ✅ 
 6. Admin stan dapat CRUD data diskon dan memilih makanan dan minuman yang didiskon ✅ 
-7. Admin stan dapat mengkonfirmasi dan mengubah status pesanannya 
+7. Admin stan dapat mengkonfirmasi dan mengubah status pesanannya ✅
 8. Admin stan dapat melihat semua data pemesanan berdasarkan bulan ✅
 9. Admin stan dapat melihat rekap pemasukan perbulan ✅

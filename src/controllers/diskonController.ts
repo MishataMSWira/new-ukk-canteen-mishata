@@ -40,24 +40,11 @@ export const getAllDiskon = async (request: Request, response: Response) => {
   }
 };
 
-export const createDiskon = async (request: AuthRequest, response: Response) => {
+export const createDiskon = async (request: Request, response: Response) => {
   try {
-    if (request.user?.role !== 'admin_stan') {
-      return response.status(403).json({ status: false, message: "Unauthorized" });
-    }
-
-    const adminId = request.user.userId;
-
-    // Cek id_stan milik admin_stan ini
-    const stan = await prisma.stan.findFirst({
-      where: { id_user: adminId }
-    });
-
-    if (!stan) {
-      return response.status(404).json({ status: false, message: "Stan not found for this admin" });
-    }
 
     const {
+      id_stan,
       nama_diskon,
       persentase_diskon,
       tanggal_awal,
@@ -69,7 +56,7 @@ export const createDiskon = async (request: AuthRequest, response: Response) => 
     /** process to save new egg */
     const newDiskon = await prisma.diskon.create({
       data: {
-        id_stan: stan.id,
+        id_stan: Number(id_stan),
         nama_diskon,
         persentase_diskon: Number(persentase_diskon),
         tanggal_awal: new Date(tanggal_awal).toISOString(),
@@ -101,16 +88,8 @@ export const createDiskon = async (request: AuthRequest, response: Response) => 
   }
 };
 
-export const updateDiskon = async (request: AuthRequest, response: Response) => {
+export const updateDiskon = async (request: Request, response: Response) => {
   try {
-    if (request.user?.role !== 'admin_stan') {
-      return response.status(403).json({ status: false, message: "Unauthorized" });
-    }
-
-    const id_stan = request.user.userId;
-
-  
-
     
     const { id } =
     request.params; /** get id of egg's id that sent in parameter of URL */
@@ -125,10 +104,10 @@ export const updateDiskon = async (request: AuthRequest, response: Response) => 
     
     /** make sure that data is exists in database */
     const findDiskon = await prisma.diskon.findFirst({
-      where: { id: Number(id), id_stan },
+      where: { id: Number(id) },
     });
     if (!findDiskon) {
-      return response.status(404).json({ status: false, message: "Stan or Diskon not found for this admin" });
+      return response.status(404).json({ status: false, message: "Diskon not found for this admin" });
     }
     /** process to update egg's data */
     const updatedDiskon = await prisma.diskon.update({
@@ -164,23 +143,17 @@ export const updateDiskon = async (request: AuthRequest, response: Response) => 
   }
 };
 
-export const dropDiskon = async (request: AuthRequest, response: Response) => {
+export const dropDiskon = async (request: Request, response: Response) => {
   try {
     const { id } = request.params;
-    /** make sure that data is exists in database */
-    if (request.user?.role !== 'admin_stan') {
-      return response.status(403).json({ status: false, message: "Unauthorized" });
-    }
-
-    const id_stan = request.user.userId;
 
     // Cek id_stan milik admin_stan ini
     const dropDiskon = await prisma.diskon.findFirst({
-      where: { id: Number(id), id_stan }
+      where: { id: Number(id) }
     });
 
     if (!dropDiskon) {
-      return response.status(404).json({ status: false, message: "Stan or Diskon not found for this admin" });
+      return response.status(404).json({ status: false, message: "Diskon not found for this admin" });
     }
 
     /** process to delete egg's data */

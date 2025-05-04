@@ -115,6 +115,7 @@ export const Login = async (request: Request, response: Response) => {
     /** find a valid admin based on username and password */
     const findUser = await prisma.users.findUnique({
       where: { username },
+      include: {siswa: true, stan: true}
     });
 
     if (!username || !password) {
@@ -133,11 +134,22 @@ export const Login = async (request: Request, response: Response) => {
       return response.status(400).json({ error: "Invalid Credentials" });
     }
 
-    const token = jwt.sign(
-      { userId: findUser.id, role: findUser.role },
-      process.env.JWT_TOKEN!,
-      { expiresIn: "24h" }
-    );
+    // Buat payload token berdasarkan role
+    const payload: any = {
+      userId: findUser.id,
+      role: findUser.role,
+      username: findUser.username,
+    };
+
+    if (findUser.role === "siswa") {
+      payload.id_siswa = findUser.siswa?.id;
+    } else if (findUser.role === "admin_stan") {
+      payload.id_stan = findUser.stan?.id;
+    }
+
+    const token = jwt.sign(payload, process.env.JWT_TOKEN!, {
+      expiresIn: "24h",
+    });
 
     const kodeVerifikasiBaru = nanoid(16);
     const expired = addDays(new Date(), 1); // 1 hari dari sekarang
@@ -150,28 +162,26 @@ export const Login = async (request: Request, response: Response) => {
       },
     });
 
-    return response
-      .status(200)
-      .json({
-        status: true,
-        logged: true,
-        user: {
-          id: findUser.id,
-          name: findUser.username,
-          role: findUser.role,
-          kode_verifikasi: kodeVerifikasiBaru,
-          verifikasi_exp: expired
-        },
-        message: `Login Success`,
-        token,
-      });
+    return response.status(200).json({
+      status: true,
+      logged: true,
+      user: {
+        id: findUser.id,
+        username: findUser.username,
+        role: findUser.role,
+        kode_verifikasi: kodeVerifikasiBaru,
+        verifikasi_exp: expired,
+        id_siswa: findUser.siswa?.id,
+        id_stan: findUser.stan?.id,
+      },
+      message: "Login Success",
+      token,
+    });
   } catch (error) {
-    return response
-      .json({
-        status: false,
-        message: `There is an error. ${error}`,
-      })
-      .status(400);
+    return response.status(400).json({
+      status: false,
+      message: `There is an error. ${error}`,
+    });
   }
 };
 
